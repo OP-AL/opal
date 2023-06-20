@@ -1,10 +1,10 @@
 import React, { useState, FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { logInRequestBody, logInApi } from '../../api';
+import { Form, Input, Button, Typography, Space } from 'antd';
+import '../../Styles/Sign.scss';
 
-interface RequestBody {
-  email: string; // 사용자 아이디 (필수!)
-  password: string; // 사용자 비밀번호 (필수!)
-}
+const { Title, Text } = Typography;
 
 const SignIn = () => {
   const [email, setEmail] = useState('');
@@ -16,56 +16,63 @@ const SignIn = () => {
     navigate(`/signup`);
   }
 
-  const headers = {
-    'content-type': 'application/json',
-    apikey: 'KDT5_nREmPe9B',
-    username: 'KDT5_Team3',
-  };
-
   async function handleSignIn(event: FormEvent) {
     event.preventDefault();
-    const requestBody: RequestBody = { email, password };
-    const res = await fetch(
-      'https://asia-northeast3-heropy-api.cloudfunctions.net/api/auth/login',
-      {
-        method: 'POST',
-        headers,
-        body: JSON.stringify(requestBody),
+    const requestBody: logInRequestBody = { email, password };
+
+    try {
+      const logInData = await logInApi(requestBody);
+
+      if (logInData.accessToken) {
+        localStorage.setItem('token', logInData.accessToken);
+        navigate(`/`);
+      } else {
+        setMessage(
+          '로그인에 실패하였습니다. 이메일과 비밀번호를 다시 확인해주세요'
+        );
       }
-    );
-    const json = await res.json();
-    console.log(json);
-    if (res.ok) {
-      localStorage.setItem('token', json.accessToken);
-      navigate(`/`);
-    } else {
-      setMessage(
-        '로그인에 실패하였습니다. 이메일과 비밀번호를 다시 확인해주세요'
-      );
+    } catch (error) {
+      setMessage('요청을 처리하는 동안 오류가 발생했습니다.');
     }
   }
 
   return (
-    <div>
-      <h1>로그인</h1>
-      <form onSubmit={handleSignIn}>
-        <input
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          type="text"
-          placeholder="email"
-        />
-        <input
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          type="password"
-          placeholder="password"
-        />
-        <button type="submit">로그인</button>
-      </form>
-      <button>아이디/비밀번호 찾기</button>
-      <button onClick={handleSignUp}>회원 가입</button>
-      {message && <h3>{message}</h3>}
+    <div className="inner">
+      <Title level={2}>로그인</Title>
+      <Space align="center" direction="vertical">
+        <div className="container">
+          <Form onSubmitCapture={handleSignIn}>
+            <Form.Item>
+              <Input
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                type="text"
+                placeholder="email"
+                size="large"
+              />
+            </Form.Item>
+            <Form.Item>
+              <Input
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                type="password"
+                placeholder="password"
+                size="large"
+              />
+            </Form.Item>
+            <Button className="btn__submit" type="primary" htmlType="submit">
+              로그인
+            </Button>
+          </Form>
+          <div className="btn__area">
+            <Button className="btn__area-item">아이디/비밀번호 찾기</Button>
+            <Button className="btn__area-item" onClick={handleSignUp}>
+              회원 가입
+            </Button>
+          </div>
+          {message && <Text>{message}</Text>}
+        </div>
+      </Space>
     </div>
   );
 };
